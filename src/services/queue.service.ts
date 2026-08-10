@@ -13,6 +13,7 @@ export class QueueService {
       payload,
       status: "queued",
       createdAt: new Date(),
+      retryCount: 0,
     };
 
     await redisClient.lPush("jobs", JSON.stringify(job));

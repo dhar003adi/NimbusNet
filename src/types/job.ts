@@ -4,4 +4,5 @@ export interface Job {
   payload: Record<string, unknown>;
   status: "queued";
   createdAt: Date;
+  retryCount: number;
 }
