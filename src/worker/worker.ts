@@ -11,14 +11,16 @@ async function startWorker() {
 
   const registry = new HandlerRegistry();
 
+  const retry = new retryServices();
+
+  const deadJob = new DeadLetterRecovery();
+
   while (true) {
     const result = await redisClient.brPop("jobs", 0);
 
     if (!result) continue;
 
     const job: Job = JSON.parse(result.element);
-
-    const retry = new retryServices();
 
     try {
       const handler = registry.getHandler(job.type);
@@ -32,8 +34,6 @@ async function startWorker() {
       //RETRY LOGIC
 
       const retried = await retry.retry(job);
-
-      const deadJob = new DeadLetterRecovery();
 
       if (!retried) {
         //DLR

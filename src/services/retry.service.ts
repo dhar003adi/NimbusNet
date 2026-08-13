@@ -19,12 +19,12 @@ export class retryServices {
 
     const delay = Math.pow(2, job.retryCount - 1) * 1000;
 
-    console.log(`Retrying in ${delay / 1000} seconds...`);
+    const retryAt = Date.now() + delay;
 
-    await this.sleep(delay);
-
-    await redisClient.lPush("jobs", JSON.stringify(job));
-
+    await redisClient.zAdd("retry-jobs", {
+      score: retryAt,
+      value: JSON.stringify(job),
+    });
     return true;
   }
 }
