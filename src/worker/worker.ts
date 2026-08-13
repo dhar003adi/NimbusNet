@@ -3,7 +3,7 @@ import { HandlerRegistry } from "../registry/HandleRegistry.js";
 import { Job } from "../types/job.js";
 import { retryServices } from "../services/retry.service.js";
 import { DeadLetterRecovery } from "../services/deadLetterRecovery.service.js";
-
+let isShuttingDown = false;
 async function startWorker() {
   await redisClient.connect();
 
@@ -15,8 +15,8 @@ async function startWorker() {
 
   const deadJob = new DeadLetterRecovery();
 
-  while (true) {
-    const result = await redisClient.brPop("jobs", 0);
+  while (!isShuttingDown) {
+    const result = await redisClient.brPop("jobs", 1);
 
     if (!result) continue;
 
@@ -46,6 +46,17 @@ async function startWorker() {
     }
   }
 }
+
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down worker...");
+
+  await redisClient.quit();
+
+  console.log("🔌 Redis connection closed");
+  isShuttingDown = true;
+
+  process.exit(0);
+});
 
 startWorker().catch((error) => {
   console.error("Worker failed to start:", error);
